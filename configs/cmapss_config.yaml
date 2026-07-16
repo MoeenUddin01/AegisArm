@@ -1,0 +1,20 @@
+# C-MAPSS LSTM Configuration
+# Windowing parameters
+window_size: 30
+stride: 5
+
+# LSTM hyperparameters
+hidden_size: 128
+num_layers: 2
+dropout: 0.2
+learning_rate: 0.001
+batch_size: 64
+epochs: 100
+
+# Data parameters
+num_features: 21
+sequence_length: 50
+
+# Training/validation split
+validation_split: 0.2
+test_split: 0.1

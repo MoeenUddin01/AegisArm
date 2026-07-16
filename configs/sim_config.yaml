@@ -1,0 +1,30 @@
+# PyBullet Simulation Configuration
+simulation:
+  gravity: -9.81
+  time_step: 0.01
+  render_mode: "ogui"  # "ogui" for offscreen, "gui" for visual
+
+# Robot parameters
+robot:
+  urdf_path: "models/robot.urdf"
+  base_position: [0, 0, 0]
+  joint_ids: [0, 1, 2, 3, 4, 5]
+
+# Motion parameters
+motion:
+  type: "sine_wave"
+  amplitude: 0.5
+  frequency: 0.1
+  duration: 60.0  # seconds
+
+# Degradation parameters
+degradation:
+  friction_coefficient: 0.5
+  torque_noise_std: 0.1
+  degradation_rate: 0.01
+
+# Health thresholds
+health:
+  warning_threshold: 0.7
+  critical_threshold: 0.3
+  shutdown_threshold: 0.1
