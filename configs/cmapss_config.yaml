@@ -1,20 +1,22 @@
 # C-MAPSS LSTM Configuration
-# Windowing parameters
-window_size: 30
-stride: 5
-
-# LSTM hyperparameters
-hidden_size: 128
-num_layers: 2
-dropout: 0.2
-learning_rate: 0.001
-batch_size: 64
-epochs: 100
 
 # Data parameters
-num_features: 21
-sequence_length: 50
+input_size: 21          # number of sensor + setting features per timestep
+window_size: 50         # sliding-window length fed to the LSTM
 
-# Training/validation split
-validation_split: 0.2
-test_split: 0.1
+# LSTM architecture
+hidden_size: 64
+num_layers: 2
+dropout: 0.2
+
+# Training
+learning_rate: 0.001
+batch_size: 64
+num_epochs: 50
+seed: 42
+val_split: 0.15
+
+# RUL cap — values above this are clipped so the model focuses on the
+# near-failure region where the RUL-vs-sensor relationship is reliable
+# (standard practice for NASA C-MAPSS benchmarks).
+rul_cap: 125
