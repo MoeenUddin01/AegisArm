@@ -29,7 +29,11 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from src.data.cmapss_loader import compute_rul_labels, load_cmapss_raw
+from src.data.cmapss_loader import (
+    compute_rul_labels,
+    identify_constant_sensors,
+    load_cmapss_raw,
+)
 from src.data.windowing import create_sliding_windows, normalize_features
 from src.models.lstm_rul import LSTMRegressor, load_config
 from src.utils.logging_utils import get_logger, setup_logging
@@ -192,6 +196,19 @@ def main(config_path: Path | str | None = None) -> None:
     # --- data pipeline ----------------------------------------------------
     df = _load_and_prepare(cfg)
     feature_cols = _feature_columns(df)
+
+    # Drop zero-variance sensors — they carry no degradation signal and
+    # would cause divide-by-zero in min-max normalisation.
+    const_sensors = identify_constant_sensors(df)
+    if const_sensors:
+        feature_cols = [c for c in feature_cols if c not in const_sensors]
+        logger.info(
+            "Dropped %d constant sensor(s) (zero-variance, would cause "
+            "divide-by-zero in min-max normalisation): %s",
+            len(const_sensors),
+            const_sensors,
+        )
+
     logger.info("Feature columns (%d): %s", len(feature_cols), feature_cols)
 
     train_df, val_df = _split_by_unit(df, cfg.get("val_split", 0.15), rng)
