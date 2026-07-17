@@ -92,19 +92,40 @@ class LSTMRegressor(nn.Module):
         return out.squeeze(-1)  # [batch]
 
     @classmethod
-    def from_config(cls, path: Path = _CONFIG_PATH) -> "LSTMRegressor":
+    def from_config(
+        cls,
+        path: Path = _CONFIG_PATH,
+        input_size: int | None = None,
+    ) -> "LSTMRegressor":
         """Construct an ``LSTMRegressor`` from ``configs/cmapss_config.yaml``.
+
+        ``input_size`` is **not** stored in the YAML — it is a derived
+        value that depends on which sensors survived constant-sensor
+        filtering.  The caller must compute it (typically
+        ``len(feature_cols)``) and pass it here.
 
         Args:
             path: Path to the YAML configuration file.
+            input_size: Number of input features per timestep.  **Required**
+                — ``input_size`` is not read from the config because it
+                varies by dataset after zero-variance sensor removal.
 
         Returns:
             A new ``LSTMRegressor`` instance with hyperparameters read
             from the config.
+
+        Raises:
+            ValueError: If *input_size* is not provided.
         """
+        if input_size is None:
+            raise ValueError(
+                "input_size must be provided explicitly — it is derived "
+                "from feature_cols after constant-sensor removal and is "
+                "not stored in the YAML config."
+            )
         cfg = load_config(path)
         return cls(
-            input_size=cfg.get("input_size", cfg.get("num_features", 21)),
+            input_size=input_size,
             hidden_size=cfg["hidden_size"],
             num_layers=cfg["num_layers"],
             dropout=cfg["dropout"],

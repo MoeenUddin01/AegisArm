@@ -145,6 +145,18 @@ def main(config_path: Path | str | None = None) -> None:
         )
     scaler = _load_scaler(scaler_path)
     logger.info("Scaler loaded from %s", scaler_path)
+
+    # The scaler keys are the exact feature columns used during training
+    # (after constant-sensor removal).  Use them to derive input_size
+    # rather than reading a potentially stale value from the YAML.
+    feature_cols = list(scaler.keys())
+    input_size = len(feature_cols)
+    logger.info(
+        "Using %d features from saved scaler (matches training): %s",
+        input_size,
+        feature_cols,
+    )
+
     test_df = _apply_scaler(test_df, feature_cols, scaler)
 
     # --- build one window per test unit -----------------------------------
@@ -158,7 +170,7 @@ def main(config_path: Path | str | None = None) -> None:
             f"Model weights not found at {weights_path}. "
             "Run train_cmapss.py first."
         )
-    model = LSTMRegressor.from_config(cfg_path).to(device)
+    model = LSTMRegressor.from_config(cfg_path, input_size=input_size).to(device)
     model.load_state_dict(torch.load(weights_path, map_location=device))
     model.eval()
     logger.info("Model loaded from %s", weights_path)

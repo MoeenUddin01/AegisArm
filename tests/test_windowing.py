@@ -275,3 +275,43 @@ class TestNormalizeFeatures:
         assert val_scaled["feat_a"].iloc[0] == pytest.approx(0.5)
         # 15 is outside train range; still scaled with train min/max
         assert test_scaled["feat_a"].iloc[0] == pytest.approx(1.5)
+
+
+# ---------------------------------------------------------------------------
+# Feature-dimension guard
+# ---------------------------------------------------------------------------
+
+class TestFeatureDimensionGuard:
+    """Guard against input-size staleness: the X array's last axis must
+    always equal len(feature_cols)."""
+
+    def test_window_last_dim_matches_feature_cols(self) -> None:
+        """X.shape[-1] must equal len(feature_cols) for any column count."""
+        for n_feats in [1, 3, 7]:
+            cols = [f"f{i}" for i in range(n_feats)]
+            df = _make_grouped_df(num_groups=2, rows_per_group=10, feature_cols=cols)
+            X, _ = create_sliding_windows(
+                df,
+                feature_cols=cols,
+                label_col="label",
+                group_col="group_id",
+                window_size=4,
+            )
+            assert X.shape[-1] == n_feats, (
+                f"Expected last dim {n_feats}, got {X.shape[-1]}"
+            )
+
+    def test_normalize_preserves_column_count(self) -> None:
+        """Normalisation must not add or remove feature columns."""
+        train = pd.DataFrame({
+            "f0": [1.0, 2.0, 3.0],
+            "f1": [10.0, 20.0, 30.0],
+            "f2": [100.0, 200.0, 300.0],
+            "meta": [0, 0, 0],
+        })
+        feature_cols = ["f0", "f1", "f2"]
+        train_scaled, _, params = normalize_features(train, [], feature_cols)
+        # Same columns present
+        assert set(params.keys()) == set(feature_cols)
+        # No extra columns snuck in
+        assert [c for c in train_scaled.columns if c.startswith("f")] == feature_cols

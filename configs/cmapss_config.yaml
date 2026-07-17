@@ -1,7 +1,6 @@
 # C-MAPSS LSTM Configuration
 
 # Data parameters
-input_size: 21          # number of sensor + setting features per timestep
 window_size: 50         # sliding-window length fed to the LSTM
 
 # LSTM architecture

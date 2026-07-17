@@ -242,7 +242,11 @@ def main(config_path: Path | str | None = None) -> None:
     val_loader = DataLoader(val_ds, batch_size=batch_size)
 
     # --- model / optimiser ------------------------------------------------
-    model = LSTMRegressor.from_config(cfg_path).to(device)
+    # input_size is derived from feature_cols, NOT read from YAML — it
+    # depends on which sensors survived constant-sensor filtering.
+    input_size = len(feature_cols)
+    logger.info("Building model with input_size=%d (derived from feature_cols)", input_size)
+    model = LSTMRegressor.from_config(cfg_path, input_size=input_size).to(device)
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg["learning_rate"])
     logger.info(
