@@ -1,30 +1,20 @@
-# PyBullet Simulation Configuration
-simulation:
-  gravity: -9.81
-  time_step: 0.01
-  render_mode: "ogui"  # "ogui" for offscreen, "gui" for visual
+# PyBullet Simulation Configuration — Phase 2
 
-# Robot parameters
-robot:
-  urdf_path: "models/robot.urdf"
-  base_position: [0, 0, 0]
-  joint_ids: [0, 1, 2, 3, 4, 5]
+# Joint to drive with sine wave.
+# joint_index 3 is the fourth joint on the KUKA IIWA and gives a visible
+# elbow-like swing without colliding with the base.  May need adjusting
+# after the first visual test — check the GUI window.
+joint_index: 3
 
-# Motion parameters
-motion:
-  type: "sine_wave"
-  amplitude: 0.5
-  frequency: 0.1
-  duration: 60.0  # seconds
+# Sine-wave motion parameters
+amplitude_rad: 0.6        # half-range in radians
+frequency_hz: 0.2         # oscillations per second
 
-# Degradation parameters
-degradation:
-  friction_coefficient: 0.5
-  torque_noise_std: 0.1
-  degradation_rate: 0.01
+# Physics
+sim_timestep: 0.0041666   # 1/240 s — PyBullet's default physics step
 
-# Health thresholds
-health:
-  warning_threshold: 0.7
-  critical_threshold: 0.3
-  shutdown_threshold: 0.1
+# Duration
+num_steps: 1000
+
+# Logging
+log_path: "outputs/logs/phase2_joint_readout.csv"
