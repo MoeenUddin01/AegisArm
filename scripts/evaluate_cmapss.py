@@ -80,25 +80,33 @@ def _last_window_per_unit(
     df: pd.DataFrame,
     feature_cols: list[str],
     window_size: int,
-) -> np.ndarray:
+) -> tuple[np.ndarray, list[int]]:
     """Extract the last *window_size* cycles for each unit as a 3-D array.
 
+    Units with fewer than *window_size* rows are skipped.
+
     Returns:
-        Array of shape ``[num_units, window_size, num_features]``.
+        ``(X, unit_ids)`` where *X* has shape
+        ``[num_surviving_units, window_size, num_features]`` and
+        *unit_ids* is the list of ``unit_number`` values that survived,
+        in the same order as the rows of *X*.
     """
     windows: list[np.ndarray] = []
+    surviving_units: list[int] = []
     for _, grp in df.groupby("unit_number", sort=True):
+        unit_id = int(grp["unit_number"].iloc[0])
         tail = grp.tail(window_size)
         if len(tail) < window_size:
             logger.warning(
-                "Unit %s has only %d rows (< window_size %d) — skipping",
-                tail["unit_number"].iloc[0],
+                "Unit %d has only %d rows (< window_size %d) — skipping",
+                unit_id,
                 len(tail),
                 window_size,
             )
             continue
         windows.append(tail[feature_cols].values.astype(np.float32))
-    return np.stack(windows)
+        surviving_units.append(unit_id)
+    return np.stack(windows), surviving_units
 
 
 # ---------------------------------------------------------------------------
@@ -160,8 +168,9 @@ def main(config_path: Path | str | None = None) -> None:
     test_df = _apply_scaler(test_df, feature_cols, scaler)
 
     # --- build one window per test unit -----------------------------------
-    X_test = _last_window_per_unit(test_df, feature_cols, window_size)
+    X_test, surviving_units = _last_window_per_unit(test_df, feature_cols, window_size)
     logger.info("Test windows shape: %s", X_test.shape)
+    logger.info("Surviving units (%d): %s", len(surviving_units), surviving_units)
 
     # --- load model & run inference ---------------------------------------
     weights_path = _MODELS_DIR / "lstm_pdm.pth"
@@ -179,13 +188,33 @@ def main(config_path: Path | str | None = None) -> None:
         x_tensor = torch.tensor(X_test, dtype=torch.float32).to(device)
         y_pred = model(x_tensor).cpu().numpy()
 
-    # --- align true RUL to the same unit order as X_test -----------------
-    # _last_window_per_unit groups with sort=True, so units are 1..N.
-    y_true = true_rul_df.sort_values("unit_number")["RUL"].values.astype(np.float64)
+    # --- align true RUL to surviving units only ---------------------------
+    # Filter RUL_FD001.txt to only the units that survived windowing, in
+    # the same order as the predictions.  This is a join on unit_number,
+    # NOT positional slicing — skipped units can appear anywhere in the
+    # unit range.
+    surviving_set = set(surviving_units)
+    y_true_df = true_rul_df[true_rul_df["unit_number"].isin(surviving_set)].copy()
+    # Reorder to match surviving_units order (which matches y_pred order)
+    y_true_df["order"] = y_true_df["unit_number"].map(
+        {u: i for i, u in enumerate(surviving_units)}
+    )
+    y_true_df = y_true_df.sort_values("order").reset_index(drop=True)
+    y_true = y_true_df["RUL"].values.astype(np.float64)
 
     # Optionally cap the true RUL to match training convention
     if rul_cap is not None:
         y_true = np.clip(y_true, a_max=rul_cap, a_min=None)
+
+    # --- sanity check before metrics --------------------------------------
+    skipped_units = [
+        u for u in true_rul_df["unit_number"].tolist()
+        if u not in surviving_set
+    ]
+    assert len(y_true) == len(y_pred), (
+        f"y_true ({len(y_true)}) and y_pred ({len(y_pred)}) length mismatch. "
+        f"Skipped {len(skipped_units)} unit(s): {skipped_units}"
+    )
 
     # --- compute metrics --------------------------------------------------
     rmse_val = rmse(y_true, y_pred)
