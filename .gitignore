@@ -6,6 +6,7 @@ data/synthetic/
 # Model weights
 models/*.pth
 models/*.pt
+models/*.zip
 
 # Outputs
 outputs/videos/
