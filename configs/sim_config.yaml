@@ -26,3 +26,9 @@ degradation:
   degradation_power: 3     # >1 = accelerating wear; higher = sharper late-stage curve
   total_cycles: 300        # one cycle = one full sine period of the joint
   output_csv: "data/synthetic/joint_degradation_log.csv"
+
+  # Multi-run variation (Phase 3 extension)
+  num_runs: 25             # independent runs with varied params
+  damping_variation_pct: 0.15   # each run's max_damping varies ±15%
+  power_variation: 0.5          # each run's degradation_power varies ±0.5
+  seed_base: 1000               # run i uses seed_base + i for reproducibility

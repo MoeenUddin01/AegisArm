@@ -62,7 +62,8 @@ physically.
 │   └── videos/
 ├── scripts/
 │   ├── evaluate_cmapss.py          # Phase 1 eval: scatter plot + metrics
-│   ├── generate_synthetic_data.py  # Phase 3 data generation
+│   ├── generate_multirun_data.py   # Phase 3 multi-run generation + overlay plot
+│   ├── generate_synthetic_data.py  # Phase 3 single-run generation + verification
 │   ├── run_phase2_demo.py          # Phase 2 CLI entrypoint
 │   └── run_simulation.py           # full pipeline CLI entrypoint
 ├── tests/
@@ -70,6 +71,7 @@ physically.
 │   ├── test_degradation.py
 │   ├── test_evaluate_alignment.py
 │   ├── test_health_monitor.py
+│   ├── test_multirun_generation.py
 │   ├── test_pybullet_env.py
 │   └── test_windowing.py
 └── notebooks/
@@ -107,12 +109,21 @@ degradation applied.
 **Real-time pacing:** the simulation loop includes `time.sleep(timestep)`
 so motion is visible and Phase 5 video output won't be a blur.
 
-### Phase 3 — Synthetic Degradation
+### Phase 3 — Synthetic Degradation ✅
 
-Inject friction increase into the joint, log labeled cycles-to-failure
-data. Verify the raw signal visibly trends before training anything.
+Inject accelerating damping increase into the joint, log labeled
+cycles-to-failure data. Supports both single-run raw-step logs (for
+Phase 5 video) and multi-run aggregated datasets (for Phase 4 training)
+with configurable parameter variation across runs.
 
-**Checkpoint:** plot raw degraded signal — trend must be visible by eye.
+**Checkpoint:** torque RMS must show a visible accelerating trend by eye.
+The multi-run overlay plot must show run-to-run variation.
+
+**Outputs:**
+- `data/synthetic/joint_degradation_log.csv` — single raw-step run
+- `data/synthetic/joint_degradation_multirun.csv` — 25 aggregated runs
+- `outputs/plots/phase3_raw_degradation_signal.png` — verification plot
+- `outputs/plots/phase3_multirun_overlay.png` — overlay plot
 
 ### Phase 4 — Joint Health Model
 
