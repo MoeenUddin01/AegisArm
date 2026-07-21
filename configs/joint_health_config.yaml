@@ -1,0 +1,15 @@
+# Joint Health LSTM Configuration — Phase 4
+# Trained on joint_degradation_multirun.csv features (torque_rms,
+# velocity_rms, position_error_mean).  The raw 'damping' and 'cycle'
+# columns are never used as model inputs — both leak the label.
+
+window_size: 15        # cycles, not raw steps
+hidden_size: 24
+num_layers: 1
+dropout: 0.1
+learning_rate: 0.001
+batch_size: 16
+num_epochs: 60
+seed: 42
+val_split_runs: 5      # number of run_ids held out for validation
+health_threshold_pct: 20

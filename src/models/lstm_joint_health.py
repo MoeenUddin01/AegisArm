@@ -1,20 +1,25 @@
-# LSTM model for joint health monitoring (Phase 4)
-# This module implements a small LSTM for 3-4 joint features
+"""Phase 4 joint-health LSTM — predicts cycles-to-failure from joint telemetry.
 
-import torch
-import torch.nn as nn
+This model is trained **exclusively** on aggregated features from
+``data/synthetic/joint_degradation_multirun.csv``:
 
-class LSTMJointHealth(nn.Module):
-    """LSTM model for joint health prediction."""
-    
-    def __init__(self, input_size=4, hidden_size=64, num_layers=1, output_size=1):
-        super(LSTMJointHealth, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
-    
-    def forward(self, x):
-        """Forward pass through the model."""
-        pass
+- ``torque_rms``
+- ``velocity_rms``
+- ``position_error_mean``
+
+It must **never** receive ``damping`` or ``cycle`` as inputs — both leak
+the ``cycles_to_failure`` label.  ``damping`` is the hidden ground-truth
+variable that generates the degradation curve; ``cycle`` is a direct
+proxy for ``cycles_to_failure = total_cycles - cycle``.
+
+The model class is ``LSTMRegressor`` imported from
+``src.models.lstm_rul`` — this is the same architecture used in Phase 1,
+instantiated with a different ``input_size`` (3 instead of ~15).  We
+reuse, not duplicate.
+"""
+
+from __future__ import annotations
+
+from src.models.lstm_rul import LSTMRegressor
+
+__all__ = ["LSTMRegressor"]

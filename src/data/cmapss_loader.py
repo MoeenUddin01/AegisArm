@@ -104,22 +104,26 @@ def load_test_rul(filepath: str) -> pd.DataFrame:
 def identify_constant_sensors(
     df: pd.DataFrame,
     threshold: float = 1e-5,
+    columns: list[str] | None = None,
 ) -> list[str]:
-    """Identify sensor columns with near-zero variance.
+    """Identify columns with near-zero variance.
 
-    Sensors whose standard deviation falls below *threshold* across the
+    Columns whose standard deviation falls below *threshold* across the
     entire dataset carry no degradation signal and are commonly dropped in
     preprocessing.  This function only *identifies* them — the caller
     decides whether to drop.
 
     Args:
-        df: DataFrame containing ``sensor_*`` columns.
-        threshold: Standard-deviation threshold below which a sensor is
+        df: DataFrame containing the columns to check.
+        threshold: Standard-deviation threshold below which a column is
             considered constant.
+        columns: Optional explicit list of column names to check.  If
+            ``None``, defaults to all columns starting with ``sensor_``.
 
     Returns:
-        List of sensor column names that are (near-)constant.
+        List of column names that are (near-)constant.
     """
-    sensor_cols = [c for c in df.columns if c.startswith("sensor_")]
-    stds = df[sensor_cols].std()
+    if columns is None:
+        columns = [c for c in df.columns if c.startswith("sensor_")]
+    stds = df[columns].std()
     return stds[stds < threshold].index.tolist()
