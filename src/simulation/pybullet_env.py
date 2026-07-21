@@ -17,6 +17,7 @@ can be imported/tested without pybullet installed.
 from __future__ import annotations
 
 import math
+import time
 from pathlib import Path
 from typing import Any
 
@@ -158,6 +159,7 @@ def run_demo(config_path: str, gui: bool = True) -> pd.DataFrame:
             physicsClientId=client,
         )
         p.stepSimulation(physicsClientId=client)
+        time.sleep(timestep)  # real-time pacing so motion is visible
 
         state = get_joint_state(robot_id, joint_index)
         records.append({

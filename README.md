@@ -14,7 +14,7 @@ physically.
 
 | Layer | Tool |
 |---|---|
-| Language | Python 3.11 |
+| Language | Python 3.12 |
 | ML | PyTorch (LSTM models, training loops) |
 | Simulation | PyBullet (physics) |
 | Video | OpenCV (frame capture, overlay, mp4 export) |
@@ -57,16 +57,21 @@ physically.
 │       └── seed.py
 ├── models/                         # saved .pth weights
 ├── outputs/
+│   ├── logs/                       # CSV joint state logs
 │   ├── plots/
 │   └── videos/
 ├── scripts/
+│   ├── evaluate_cmapss.py          # Phase 1 eval: scatter plot + metrics
 │   ├── generate_synthetic_data.py  # Phase 3 data generation
+│   ├── run_phase2_demo.py          # Phase 2 CLI entrypoint
 │   └── run_simulation.py           # full pipeline CLI entrypoint
 ├── tests/
 │   ├── test_cmapss_loader.py
-│   ├── test_windowing.py
 │   ├── test_degradation.py
-│   └── test_health_monitor.py
+│   ├── test_evaluate_alignment.py
+│   ├── test_health_monitor.py
+│   ├── test_pybullet_env.py
+│   └── test_windowing.py
 └── notebooks/
     └── 01_cmapss_lstm_kaggle.ipynb # thin wrapper for Kaggle GPU runs
 ```
@@ -74,14 +79,12 @@ physically.
 ## Installation
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync
 ```
 
 ## Development Phases
 
-### Phase 1 — C-MAPSS LSTM (Kaggle-capable)
+### Phase 1 — C-MAPSS LSTM (Kaggle-capable) ✅
 
 Load NASA C-MAPSS FD001 data, build sliding windows, train an LSTM RUL
 regressor, evaluate with RMSE + pred-vs-actual scatter.
@@ -93,13 +96,16 @@ proceed if they don't — report the metric and stop for review.
 model are **incompatible**. Never load Phase 1 weights into the Phase 4
 model.
 
-### Phase 2 — PyBullet Basics
+### Phase 2 — PyBullet Basics ✅
 
 Load a KUKA arm, drive one joint with a sine wave, log raw joint state to
 CSV. No degradation, no ML.
 
 **Checkpoint:** raw torque/velocity stable for 200+ steps with no
 degradation applied.
+
+**Real-time pacing:** the simulation loop includes `time.sleep(timestep)`
+so motion is visible and Phase 5 video output won't be a blur.
 
 ### Phase 3 — Synthetic Degradation
 
@@ -125,7 +131,7 @@ Frame capture + cycle-count / health-score overlay + mp4 via
 ## Running Tests
 
 ```bash
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
 Tests use synthetic in-memory data — no real data files required.
